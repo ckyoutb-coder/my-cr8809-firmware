@@ -1,7 +1,7 @@
 name: Build-CR8809-PassWall
 
 on:
-  workflow_dispatch: # 支持手动点击开始
+  workflow_dispatch:
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Init Environment
       run: |
@@ -29,7 +29,6 @@ jobs:
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         cd openwrt
-        # 添加 PassWall 核心源
         sed -i '$a src-git passwall https://github.com/xiaorouji/openwrt-passwall' feeds.conf.default
 
     - name: Update Feeds
@@ -41,25 +40,17 @@ jobs:
     - name: Generate Custom Config
       run: |
         cd openwrt
-        # 1. 核心硬件选择 (针对小米 CR8809)
         echo "CONFIG_TARGET_ipq50xx=y" > .config
         echo "CONFIG_TARGET_ipq50xx_arm_cortex-a7=y" >> .config
         echo "CONFIG_TARGET_ipq50xx_arm_cortex-a7_DEVICE_xiaomi_redmi-router-ax3000=y" >> .config
-        
-        # 2. 中文界面支持
         echo "CONFIG_PACKAGE_luci=y" >> .config
         echo "CONFIG_PACKAGE_luci-i18n-base-zh-cn=y" >> .config
-        
-        # 3. PassWall 核心组件
         echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
         echo "CONFIG_PACKAGE_luci-i18n-passwall-zh-cn=y" >> .config
-        
-        # 4. 极致精简：删除多余插件节省 168MB 内存
         echo "# CONFIG_PACKAGE_luci-app-access-control is not set" >> .config
         echo "# CONFIG_PACKAGE_luci-app-filebrowser is not set" >> .config
         echo "# CONFIG_PACKAGE_luci-app-upnp is not set" >> .config
         echo "# CONFIG_PACKAGE_luci-app-vlmcsd is not set" >> .config
-        
         make defconfig
 
     - name: Download Dl Package
@@ -75,7 +66,7 @@ jobs:
         make -j$(nproc) || make -j1 V=s
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: CR8809_Firmware
         path: openwrt/bin/targets/ipq50xx/arm_cortex-a7/*.bin
